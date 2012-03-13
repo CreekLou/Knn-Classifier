@@ -13,7 +13,7 @@ public class knn{
 
 	public static List<Instance> trainingData = new ArrayList<Instance>();
 	public static List<Instance> testData = new ArrayList<Instance>();
-	public static TreeMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
+	public static HashMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
 	
 	public static void main(String[] args){
 
