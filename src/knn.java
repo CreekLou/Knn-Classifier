@@ -20,10 +20,10 @@ public class knn{
 		readData(args[0], trainingData);
 		readData(args[1], testData);
 		final Long fTime = System.nanoTime();
-		System.out.println("File Reading Time: "+(fTime-startTime)/(Math.pow(10,9))+" seconds.");
+		//System.out.println("File Reading Time: "+(fTime-startTime)/(Math.pow(10,9))+" seconds.");
 		normalize(trainingData);
 		normalize(testData);
-		System.out.println("Normalization Time: "+(System.nanoTime()-fTime)/(Math.pow(10,9))+" seconds.");
+		//System.out.println("Normalization Time: "+(System.nanoTime()-fTime)/(Math.pow(10,9))+" seconds.");
 		final int kValue = Integer.parseInt(args[2]);
 		final int dMetric = Integer.parseInt(args[3]);
 		final String fName = args[0].substring(0,args[0].lastIndexOf(".train"))+"_prediction_file.txt";
@@ -39,7 +39,7 @@ public class knn{
 			final long estimatedTime = System.nanoTime() - startTime;
 			Long gTime = System.nanoTime();
 			System.out.println("Time Cost: "+estimatedTime/(Math.pow(10,9))+" seconds.");
-			System.out.println("Distnace Method Time: "+(eTime-gTime)/(Math.pow(10,9))+" seconds.");
+		//	System.out.println("Distance Method Time: "+(eTime-gTime)/(Math.pow(10,9))+" seconds.");
 		}
 		catch(IOException e){
 			System.out.println(e.getMessage());
@@ -74,8 +74,7 @@ public class knn{
 	public static void readData(String fileName, List<Instance> tData){
 		try{
 			String line; int flag=0; int colPos; Instance instance = new Instance("");
-			BufferedReader br = new BufferedReader(
-									new FileReader(fileName));
+			BufferedReader br = new BufferedReader(new FileReader(fileName));
 			while((line=br.readLine())!=null){
 				for(String token: line.split("\\s+")){
 					if(flag==0){
@@ -98,13 +97,15 @@ public class knn{
 
 	public static void euclideanDistance(int kValue, int dMetric, BufferedWriter writer){
 		/* In this method, we are looping over all the test Data Instances, calculating the distance eucledian distance between each of these instances and all the training data instances. These distance values are then stored in an array of objects of type Distance (check instance.java). The distances are then sorted and passed to method 'Classification' with a reference to the test Data ID. */
-		float tp = 0; Distances tempDist = new Distances();
+		float tp = 0; Distances tempDist = new Distances(); double zz; double estTime = 0.0;
         int trdInstanceDimensionSize, tstInstanceDimensionSize; int _tstIndex = 0; int _trnIndex = 0;
 		//Iterating over all testData Instances
 
 		for(int a = 0; a<testData.size();a++){
 			//Iterating over all TrainingData Instances
 			metricData.clear();
+
+			zz = System.nanoTime();
 
 			for(int b=0; b<trainingData.size();b++){
 
@@ -150,7 +151,6 @@ public class knn{
 							}
 						}
 				}
-
 				tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
                 tempDist.fromInstance = b;
 
@@ -162,9 +162,11 @@ public class knn{
                 }else{
                 	metricData.put(tempDist.distanceValue,tempDist.fromInstance);
                 }
-			}
+			}			
+
 			//The classification method returns 1 if the current instance is classified accurately, else returns 0. 'tp' keeps a track of the true positives.
 			tp += classification(a,kValue,dMetric,writer);
+			estTime += (System.nanoTime()-zz)/(Math.pow(10,9));
 		}
 		System.out.println("Accuracy: "+(tp/testData.size())*100);
 	}
@@ -234,6 +236,8 @@ public class knn{
 			//HashMap to store Key,Value pairs where Key - Class Name and Value is weighted distance.
 			HashMap<String,Double> classMap = new HashMap<String,Double>(kValue);
 			//Loop to populate the 'classMap' with data from the k closest instances.
+
+			
 		
 			for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
 				if(dMetric == 0){
@@ -256,7 +260,6 @@ public class knn{
 					classMap.put(classId,weight);
 				}
 			}
-
 			//#System.out.println(classMap.entrySet());
 
 			classId = "0"; //temporary variable to store the class Key of the best Class (class with highest weight)
@@ -274,7 +277,7 @@ public class knn{
 
 	    	writer.write(bestClass.getKey()+"");
 	    	writer.newLine();
-
+			
 		    //#System.out.println();
 	    	//Checking if the bestClass the model determined is equal to the actual class.
 	    	testData.get(testInstanceId).classifiedClass = (String)bestClass.getKey();
