@@ -13,7 +13,7 @@ public class knn{
 
 	public static List<Instance> trainingData = new ArrayList<Instance>();
 	public static List<Instance> testData = new ArrayList<Instance>();
-	public static HashMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
+	public static TreeMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
 	
 	public static void main(String[] args){
 
@@ -62,23 +62,27 @@ public class knn{
 
 	/*Method to read data from files. */
 	public static void readData(String fileName, List<Instance> tData){
-			try{   
-                final Scanner reader = new Scanner(new File(fileName));
-                Instance instance; Scanner termReader;
-				do{ 		
-					instance = new Instance(reader.next());
-					Scanner lineReader = new Scanner(reader.nextLine());
-					while(lineReader.hasNext()){
-						termReader = new Scanner(lineReader.next());
-						termReader.useDelimiter(":");
-						instance.addTerm(Integer.parseInt(termReader.next()),Double.parseDouble(termReader.next()));
+		try{
+			String line; int flag=0; int colPos; Instance instance = new Instance("");
+			BufferedReader br = new BufferedReader(new FileReader(fileName));
+			while((line=br.readLine())!=null){
+				for(String token: line.split("\\s+")){
+					if(flag==0){
+						instance = new Instance(token);
+						flag++;
+					}else{
+						colPos = token.indexOf(":");
+						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)));				
 					}
-					tData.add(instance);
-                }while(reader.hasNext());
+				}
+				tData.add(instance);
+				flag = 0;
 			}
-			catch(IOException e){
-				System.out.println("File IO Error "+e);
-			}
+			br.close();
+		}
+		catch(IOException e){
+			System.out.println("File IO Error "+e.getMessage());
+		}
 	}
 
 	public static void euclideanDistance(int kValue, int dMetric, BufferedWriter writer){
