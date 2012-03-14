@@ -22,8 +22,13 @@ public class knn{
 		
 		final Long fTime = System.nanoTime();
 		//System.out.println("File Reading Time: "+(fTime-startTime)/(Math.pow(10,9))+" seconds.");
-		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
-		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
+
+/*		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
+		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);*/
+
+		normalize(trainingData,Instance.maxTRN,Instance.maxTST);
+		normalize(testData,Instance.maxTST,Instance.maxTST);
+
 		//System.out.println("Normalization Time: "+(System.nanoTime()-fTime)/(Math.pow(10,9))+" seconds.");
 		final int kValue = Integer.parseInt(args[2]);
 		final int dMetric = Integer.parseInt(args[3]);
@@ -32,7 +37,7 @@ public class knn{
 			Long eTime = System.nanoTime();
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
 			if(dMetric == 0){
-                euclideanDistance(kValue,dMetric,writer);
+                euclideanDistance(kValue,dMetric,writer,trainingData,testData);
             }else{
                 cosineSimilarity(kValue,dMetric,writer);
             }
@@ -78,23 +83,21 @@ public class knn{
 			curInstance = tData.get(i);
 			for(int j=0;j<curInstance.indexes.size();j++){
 				currentIndex = curInstance.indexes.get(j);
-				System.out.println("Current Value: "+curInstance.values.get(j)+" Mean: "+mean.get(currentIndex));
 				temp = (curInstance.values.get(j)-mean.get(currentIndex))/Math.sqrt((stdDev.get(currentIndex)));
-				System.out.println("STDDEV: "+stdDev.get(currentIndex)+" new value: "+temp);	
 				curInstance.values.set(j,temp);
 			}
 		}
 	}
 
-/*	public static void normalize(List<Instance> tData){
-		int currentIndex; double max,min, normalizedValue;
+	public static void normalize(List<Instance> tData, Map<Integer,Double> max, Map<Integer,Double> min){
+		int currentIndex; double maxVal,minVal, normalizedValue;
 		for(int i=0;i<tData.size();i++){		
 			for(int j=0;j<tData.get(i).indexes.size();j++){
 				currentIndex = tData.get(i).indexes.get(j);
-				max = Instance.max.get(currentIndex);
-				min = Instance.min.get(currentIndex);
+				maxVal = max.get(currentIndex);
+				minVal = min.get(currentIndex);
 				if(!(max==min)){
-					normalizedValue = (tData.get(i).values.get(j)-min)/(max-min);
+					normalizedValue = (tData.get(i).values.get(j)-minVal)/(maxVal-minVal);
 					tData.get(i).values.set(j,normalizedValue);
 				}					
 			}
@@ -107,7 +110,7 @@ public class knn{
 			}
 			absValues[i] = Math.sqrt(absValues[i]);
 		}
-	}*/
+	}
 
 	public static void readData(String fileName, List<Instance> tData, int type){
 		try{
@@ -133,7 +136,7 @@ public class knn{
 		}
 	}
 
-	public static void euclideanDistance(int kValue, int dMetric, BufferedWriter writer){
+	public static void euclideanDistance(int kValue, int dMetric, BufferedWriter writer, List<Instance> trainingData, List<Instance> testData){
 		/* In this method, we are looping over all the test Data Instances, calculating the distance eucledian distance between each of these instances and all the training data instances. These distance values are then stored in an array of objects of type Distance (check instance.java). The distances are then sorted and passed to method 'Classification' with a reference to the test Data ID. */
 		float tp = 0; Distances tempDist = new Distances(); double zz; double estTime = 0.0;
         int trdInstanceDimensionSize, tstInstanceDimensionSize; int _tstIndex = 0; int _trnIndex = 0;
@@ -189,18 +192,24 @@ public class knn{
 							}
 						}
 				}
-				tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
-                tempDist.fromInstance = b;
 
-                if(metricData.size()>=kValue){
-                	if(metricData.lastKey()>tempDist.distanceValue){
-                		metricData.remove(metricData.lastKey());
-                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-                	}
-                }else{
+				if(!(tempDist.distanceValue==0)){
+					tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
+                	tempDist.fromInstance = b;
+                	if(metricData.size()>=kValue){
+                		if(metricData.lastKey()>tempDist.distanceValue){
+                			metricData.remove(metricData.lastKey());
+                			metricData.put(tempDist.distanceValue,tempDist.fromInstance);
+                		}
+              		}else{
                 	metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-                }
-			}			
+                	}
+				}
+			}
+
+			System.out.println(metricData.entrySet());
+
+
 
 			//The classification method returns 1 if the current instance is classified accurately, else returns 0. 'tp' keeps a track of the true positives.
 			tp += classification(a,kValue,dMetric,writer);
@@ -277,11 +286,11 @@ public class knn{
 		
 			for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
 				if(dMetric == 0){
-					//#System.out.print("Distance: "+distances[i].distanceValue+" between Test Instance "+testInstanceId+" and Training Instance: "+distances[i].fromInstance);
-					//#System.out.println(" Class: "+trainingData.get(distances[i].fromInstance).instanceClass);
+/*					System.out.print("Distance: "+entry.getKey()+" between Test Instance "+testInstanceId+" and Training Instance: "+entry.getValue());
+					System.out.println(" Class: "+trainingData.get(entry.getValue()).instanceClass);*/
 					classId = trainingData.get(entry.getValue()).instanceClass;
-					weight = 1/(Math.pow(entry.getKey(),2));
-					//#System.out.println("Weight: "+weight);
+					weight = 1/(Math.pow(entry.getKey(),2));/*
+					System.out.println("Weight: "+weight);*/
 				}else{
 					//#System.out.print("Similarity: "+entry.getKey()+" between Test Instance: "+testInstanceId+" and Training Instance: "+entry.getValue());
 					//#System.out.println(" Class: "+trainingData.get(entry.getValue()).instanceClass);
@@ -296,7 +305,7 @@ public class knn{
 					classMap.put(classId,weight);
 				}
 			}
-			//#System.out.println(classMap.entrySet());
+			System.out.println(classMap.entrySet());
 
 			classId = "0"; //temporary variable to store the class Key of the best Class (class with highest weight)
 			weight = 0;
@@ -314,12 +323,12 @@ public class knn{
 	    	writer.write(bestClass.getKey()+"");
 	    	writer.newLine();
 			
-		    //#System.out.println();
+		    System.out.println();
 	    	//Checking if the bestClass the model determined is equal to the actual class.
 	    	testData.get(testInstanceId).classifiedClass = (String)bestClass.getKey();
-	    	//#System.out.println("Best Class : "+testData.get(testInstanceId).classifiedClass);
-	    	//#System.out.println("Actual Class: "+testData.get(testInstanceId).instanceClass);
-			//#System.out.println("-------------------------------------------------------------------");
+/*	    	System.out.println("Best Class : "+testData.get(testInstanceId).classifiedClass);
+	    	System.out.println("Actual Class: "+testData.get(testInstanceId).instanceClass);
+			System.out.println("-------------------------------------------------------------------");*/
 	    	if(testData.get(testInstanceId).classifiedClass.equals(testData.get(testInstanceId).instanceClass)){
 	    		return 1;
 	    	}else{
