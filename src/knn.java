@@ -37,9 +37,9 @@ public class knn{
 			Long eTime = System.nanoTime();
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
 			if(dMetric == 0){
-                euclideanDistance(kValue,dMetric,writer,trainingData,trainingData);
+                euclideanDistance(kValue,dMetric,writer,trainingData,testData);
             }else{
-           //     cosineSimilarity(kValue,dMetric,writer);
+               cosineSimilarity(kValue,dMetric,writer,trainingData,testData);
             }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
@@ -217,30 +217,30 @@ public class knn{
 	}
 
 	//Very similar as eucledian distance, except cosine similarity is calculated.
-/*	public static void cosineSimilarity(int kValue, int dMetric, BufferedWriter writer){
+	public static void cosineSimilarity(int kValue, int dMetric, BufferedWriter writer, List<Instance> trnData, List<Instance> tstData){
 		float tp = 0; 
 		double modTstDataInstance = 0, modTrnDataInstance = 0; //Variables to store the mod values of the instances.
         Similarities tempSim = new Similarities();
 
-		for(int a=0;a<testData.size();a++){
+		for(int a=0;a<tstData.size();a++){
 			metricData.clear();
-			for(int i = 0; i<testData.get(a).indexes.size();i++){
-				modTstDataInstance += Math.pow(testData.get(a).values.get(i),2);
+			for(int i = 0; i<tstData.get(a).indexes.size();i++){
+				modTstDataInstance += Math.pow(tstData.get(a).values.get(i),2);
 			}
 			modTstDataInstance = Math.sqrt(modTstDataInstance);
 
-			for(int b=0; b<trainingData.size();b++){
+			for(int b=0; b<trnData.size();b++){
 				tempSim.similarityValue = 0;
                 tempSim.fromInstance = 0;
 
-				final int trdInstanceDimensionSize = trainingData.get(b).indexes.size();
-				final int tstInstanceDimensionSize = testData.get(a).indexes.size();
+				final int trdInstanceDimensionSize = trnData.get(b).indexes.size();
+				final int tstInstanceDimensionSize = tstData.get(a).indexes.size();
 
 				for(int i = 0, j = 0; i<tstInstanceDimensionSize && j<trdInstanceDimensionSize; ){
-                    int _tstIndex = testData.get(a).indexes.get(i);
-                    int _trnIndex = trainingData.get(b).indexes.get(j);
+                    int _tstIndex = tstData.get(a).indexes.get(i);
+                    int _trnIndex = trnData.get(b).indexes.get(j);
                     if(_tstIndex==_trnIndex){
-                    	tempSim.similarityValue += (testData.get(a).values.get(i))*(trainingData.get(b).values.get(j));
+                    	tempSim.similarityValue += (tstData.get(a).values.get(i))*(trnData.get(b).values.get(j));
                       	i++; j++;
                         continue;
 					}else if(_tstIndex<_trnIndex){
@@ -250,8 +250,8 @@ public class knn{
 					}
 				}
 
-				for(int i=0; i<trainingData.get(b).indexes.size();i++){
-					modTrnDataInstance += Math.pow(trainingData.get(b).values.get(i),2);
+				for(int i=0; i<trnData.get(b).indexes.size();i++){
+					modTrnDataInstance += Math.pow(trnData.get(b).values.get(i),2);
 				}
 				modTrnDataInstance = Math.sqrt(modTrnDataInstance);
 				tempSim.similarityValue = (tempSim.similarityValue)/(modTrnDataInstance*modTstDataInstance);
@@ -266,14 +266,14 @@ public class knn{
                 	metricData.put(tempSim.similarityValue,tempSim.fromInstance);
                 }
 			}
-			tp += classification(a,kValue,dMetric,writer);
+			tp += classification(a,kValue,dMetric,writer,trnData,tstData);
 		}
 
 		//System.out.println("**************************************");
 		//System.out.println("TP: "+tp+" FP: "+(testData.size()-tp));
 		System.out.println("Accuracy: "+(tp/testData.size())*100);
 	}
-*/
+
 	public static int classification(int testInstanceId, int kValue, int dMetric, BufferedWriter writer, List<Instance> trnData, List<Instance> tstData){
 		try{
 			String classId;
