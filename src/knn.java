@@ -12,6 +12,7 @@ public class knn{
 	public static List<Instance> trainingData = new ArrayList<Instance>();
 	public static List<Instance> testData = new ArrayList<Instance>();
 	public static TreeMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
+	public static List<Instance> delete = new ArrayList<Instance>();
 	
 	public static void main(String[] args){
 
@@ -27,7 +28,7 @@ public class knn{
 		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
 
 		//normalize(trainingData,Instance.maxTRN,Instance.maxTST);
-	//	normalize(testData,Instance.maxTST,Instance.maxTST);
+		//normalize(testData,Instance.maxTST,Instance.maxTST);
 
 		//System.out.println("Normalization Time: "+(System.nanoTime()-fTime)/(Math.pow(10,9))+" seconds.");
 		final int kValue = Integer.parseInt(args[2]);
@@ -37,14 +38,30 @@ public class knn{
 			Long eTime = System.nanoTime();
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
 			if(dMetric == 0){
-                euclideanDistance(kValue,dMetric,writer,trainingData,trainingData);
+				int count = 0; int initialSize = trainingData.size(); int maxReduce = initialSize/2;
+				double accuracy = euclideanDistance(kValue,dMetric,writer,trainingData,trainingData,true)*100;
+                System.out.println("TRN Accuracy: "+accuracy); int counter = 0;
+                while((trainingData.size()>maxReduce)&&accuracy<90){
+	               	for(Instance x: delete){
+	                	trainingData.remove(x); count++;
+	                }
+	                delete.clear();
+	                System.out.println("*********ATTEMPT "+(counter++)+" ********");
+	                System.out.println("Removed "+count+" instances from Training Data.");
+	                System.out.println("New SIZE of training Data: "+trainingData.size());
+	                System.out.println("SIZE of test Data: "+testData.size());
+	                accuracy = euclideanDistance(kValue,dMetric,writer,trainingData,trainingData,true)*100;
+	                System.out.println("TRN Accuracy: "+accuracy);
+	                System.out.println("******************************");
+                }
+                System.out.println("Final Accuracy: "+euclideanDistance(kValue,dMetric,writer,trainingData,testData,false)*100);
             }else{
            //     cosineSimilarity(kValue,dMetric,writer);
             }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
 			Long gTime = System.nanoTime();
-			System.out.println("Time Cost: "+estimatedTime/(Math.pow(10,9))+" seconds.");
+			//System.out.println("Time Cost: "+estimatedTime/(Math.pow(10,9))+" seconds.");
 		//	System.out.println("Distance Method Time: "+(eTime-gTime)/(Math.pow(10,9))+" seconds.");
 		}
 		catch(IOException e){
@@ -136,9 +153,9 @@ public class knn{
 		}
 	}
 
-	public static void euclideanDistance(int kValue, int dMetric, BufferedWriter writer, List<Instance> trnData, List<Instance> tstData){
+	public static double euclideanDistance(int kValue, int dMetric, BufferedWriter writer, List<Instance> trnData, List<Instance> tstData, Boolean optimizationRun){
 		/* In this method, we are looping over all the test Data Instances, calculating the distance eucledian distance between each of these instances and all the training data instances. These distance values are then stored in an array of objects of type Distance (check instance.java). The distances are then sorted and passed to method 'Classification' with a reference to the test Data ID. */
-		float tp = 0; Distances tempDist = new Distances(); double zz; double estTime = 0.0;
+		float tp = 0; Distances tempDist = new Distances(); double zz; double estTime = 0.0; int result;
         int trdInstanceDimensionSize, tstInstanceDimensionSize; int _tstIndex = 0; int _trnIndex = 0;
 		//Iterating over all testData Instances
 
@@ -210,10 +227,18 @@ public class knn{
 			}*/
 
 			//The classification method returns 1 if the current instance is classified accurately, else returns 0. 'tp' keeps a track of the true positives.
-			tp += classification(a,kValue,dMetric,writer,trnData,tstData);
+			result = classification(a,kValue,dMetric,writer,trnData,tstData);
+			if(optimizationRun){
+				if(result == 0){
+					delete.add(tstData.get(a));
+				}	
+			}
+			tp += result;
 			estTime += (System.nanoTime()-zz)/(Math.pow(10,9));
 		}
-		System.out.println("Accuracy: "+(tp/tstData.size())*100);
+		double accuracy =(tp)/(tstData.size());
+		System.out.println("FP : "+(tstData.size()-tp));
+		return accuracy;
 	}
 
 	//Very similar as eucledian distance, except cosine similarity is calculated.
