@@ -17,12 +17,13 @@ public class knn{
 
 		final long startTime = System.nanoTime();
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
-		readData(args[0], trainingData);
-		readData(args[1], testData);
+		readData(args[0], trainingData, 0);
+		readData(args[1], testData, 1);
+		
 		final Long fTime = System.nanoTime();
 		//System.out.println("File Reading Time: "+(fTime-startTime)/(Math.pow(10,9))+" seconds.");
-		normalize(trainingData);
-		normalize(testData);
+		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
+		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
 		//System.out.println("Normalization Time: "+(System.nanoTime()-fTime)/(Math.pow(10,9))+" seconds.");
 		final int kValue = Integer.parseInt(args[2]);
 		final int dMetric = Integer.parseInt(args[3]);
@@ -31,10 +32,10 @@ public class knn{
 			Long eTime = System.nanoTime();
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
 			if(dMetric == 0){
-                            euclideanDistance(kValue,dMetric,writer);
-                        }else{
-                            cosineSimilarity(kValue,dMetric,writer);
-                        }
+                euclideanDistance(kValue,dMetric,writer);
+            }else{
+                cosineSimilarity(kValue,dMetric,writer);
+            }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
 			Long gTime = System.nanoTime();
@@ -48,7 +49,44 @@ public class knn{
 
 	/* Method to normalize the data sets */
 
-	public static void normalize(List<Instance> tData){
+	public static void standardDeviation(List<Instance> tData, Map<Integer,Double> mean, Map<Integer,Double> stdDev){
+		int dataSize = tData.size();
+		for(Map.Entry<Integer,Double> entry: mean.entrySet()){
+			entry.setValue(entry.getValue()/dataSize);
+		}
+		int currentIndex; Instance curInstance;
+		double curValue;
+
+		for(int i=0;i<dataSize;i++){
+			curInstance = tData.get(i);
+			for(int j=0;j<curInstance.indexes.size();j++){
+				currentIndex = curInstance.indexes.get(j);
+				if(stdDev.containsKey(currentIndex)){
+					curValue = stdDev.get(currentIndex);					
+				}else{
+					curValue = 0;
+				}
+				stdDev.put(currentIndex,(curValue+Math.pow((curInstance.values.get(j)-mean.get(currentIndex)),2)));
+			}				
+		}
+	}
+
+	public static void normalizeNEW(List<Instance> tData, Map<Integer,Double> mean, Map<Integer,Double> stdDev){
+		standardDeviation(tData,mean,stdDev);
+		Instance curInstance; int currentIndex; double temp;
+		for(int i=0;i<tData.size();i++){
+			curInstance = tData.get(i);
+			for(int j=0;j<curInstance.indexes.size();j++){
+				currentIndex = curInstance.indexes.get(j);
+				System.out.println("Current Value: "+curInstance.values.get(j)+" Mean: "+mean.get(currentIndex));
+				temp = (curInstance.values.get(j)-mean.get(currentIndex))/Math.sqrt((stdDev.get(currentIndex)));
+				System.out.println("STDDEV: "+stdDev.get(currentIndex)+" new value: "+temp);	
+				curInstance.values.set(j,temp);
+			}
+		}
+	}
+
+/*	public static void normalize(List<Instance> tData){
 		int currentIndex; double max,min, normalizedValue;
 		for(int i=0;i<tData.size();i++){		
 			for(int j=0;j<tData.get(i).indexes.size();j++){
@@ -69,9 +107,9 @@ public class knn{
 			}
 			absValues[i] = Math.sqrt(absValues[i]);
 		}
-	}
+	}*/
 
-	public static void readData(String fileName, List<Instance> tData){
+	public static void readData(String fileName, List<Instance> tData, int type){
 		try{
 			String line; int flag=0; int colPos; Instance instance = new Instance("");
 			BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -82,7 +120,7 @@ public class knn{
 						flag++;
 					}else{
 						colPos = token.indexOf(":");
-						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)));				
+						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)),type);				
 					}
 				}
 				tData.add(instance);
@@ -235,9 +273,7 @@ public class knn{
 			double weight = 0;
 			//HashMap to store Key,Value pairs where Key - Class Name and Value is weighted distance.
 			HashMap<String,Double> classMap = new HashMap<String,Double>(kValue);
-			//Loop to populate the 'classMap' with data from the k closest instances.
-
-			
+			//Loop to populate the 'classMap' with data from the k closest instances.			
 		
 			for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
 				if(dMetric == 0){
