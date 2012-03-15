@@ -23,7 +23,7 @@ public class knn{
 		System.out.println("TD SIZE: "+trainingData.size());
 		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
 		//normalize(trainingData,Instance.maxTRN,Instance.minTRN);
-		bootstrap(5);
+		//bootstrap(5);
 
 		readData(args[1], testData, 1);	
 		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
@@ -87,7 +87,7 @@ public class knn{
 				curKey = entry.getKey();
 				curVal = entry.getValue();
 				//System.out.println("Current Value: "+curVal+" Mean: "+mean.get(curKey));
-				temp = (curVal-mean.get(curKey))/Math.sqrt((stdDev.get(curKey)));
+				temp = (curVal)/Math.sqrt((stdDev.get(curKey)));
 				//System.out.println("STDDEV: "+stdDev.get(curKey)+" new value: "+temp);	
 				entry.setValue(temp);
 			}
