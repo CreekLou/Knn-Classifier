@@ -15,30 +15,24 @@ public class knn{
 	public static List<Instance> testData = new ArrayList<Instance>();
 	public static TreeMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
 	public static Map<String,ArrayList<Instance>> clusters = new HashMap<String,ArrayList<Instance>>();
-	public static Map<String,ArrayList<Instance>> selectedInstances = new HashMap<String,ArrayList<Instance>>();
 	public static void main(String[] args){
 
 		final long startTime = System.nanoTime();
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
-		readData(args[0], trainingData, 0);
+		readData(args[0], trainingData, 0);	
 		System.out.println("TD SIZE: "+trainingData.size());
-/*		for(Map.Entry<String,ArrayList<Instance>> entry: clusters.entrySet()){
-			System.out.println("Class: "+entry.getKey());
-			for(Instance instance: entry.getValue()){
-			System.out.println(instance.parameters.entrySet());
-			}
-		}	*/	
-		
-/*		System.out.println("There are "+clusters.size()+" clusters.");
-		System.out.println("*********");
-*/
+		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
+		//normalize(trainingData,Instance.maxTRN,Instance.minTRN);
 		bootstrap(5);
+
+		readData(args[1], testData, 1);	
+		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
+		//normalize(testData,Instance.maxTST,Instance.minTST);		
+
+	
+		System.out.println("There are "+clusters.size()+" clusters.");
 		System.out.println("New Size: "+trainingData.size());
 
-		readData(args[1], testData, 1);
-		
-		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
-		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
 		final int kValue = Integer.parseInt(args[2]);
 		final int dMetric = Integer.parseInt(args[3]);
 		final String fName = args[0].substring(0,args[0].lastIndexOf(".train"))+"_prediction_file.txt";
@@ -47,7 +41,7 @@ public class knn{
 			if(dMetric == 0){
                 euclideanDistance(kValue,dMetric,writer);
             }else{
-                            //cosineSimilarity(kValue,dMetric,writer);
+                //cosineSimilarity(kValue,dMetric,writer);
             }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
@@ -100,11 +94,25 @@ public class knn{
 		}
 	}
 
+	public static void normalize(List<Instance> tData, Map<Integer,Double> max, Map<Integer,Double> min){
+		for(int i=0;i<tData.size();i++){
+			int currentIndex; double normalizedValue, maxValue, minValue;
+			for(Map.Entry<Integer,Double> entry: tData.get(i).parameters.entrySet()){
+				currentIndex = entry.getKey();
+				maxValue = max.get(currentIndex);
+				minValue = min.get(currentIndex);
+				if(!(max==min)){
+					normalizedValue = (entry.getValue()-minValue)/(maxValue-minValue);
+					tData.get(i).parameters.put(entry.getKey(),normalizedValue);
+				}
+			}			
+		}		
+	}
+
 	public static void bootstrap(int rValue){
 		ArrayList<Instance> additions = new ArrayList<Instance>();
 		ArrayList<Instance> instances;
-		ArrayList<Instance> temp2 = new ArrayList<Instance>();
-		String className; 
+		ArrayList<Instance> selectedInstances = new ArrayList<Instance>();	String className; 
 		Map.Entry<Integer,Double> outerEntry;
 		Map.Entry<Integer,Double> innerEntry;
 		Map.Entry<Integer,Double> temp;
@@ -112,17 +120,16 @@ public class knn{
 
 		Distances tempDist = new Distances();
 
-	//	System.out.println(clusters.entrySet());
-	/*	System.out.println("SDSJKDNKDJ");*/
 		for(Map.Entry<String,ArrayList<Instance>> cluster: clusters.entrySet()){
 			instances = cluster.getValue();
 			className = cluster.getKey();
-/*			System.out.println("*************************");
-			System.out.println("New Cluster of class "+className);*/
-/*			for(int i=0 ; i<instances.size(); i++){
-				System.out.println(instances.get(i).parameters.entrySet());
+
+/*			System.out.println("Processing cluster of class "+className+" with "+cluster.getValue().size()+" instances.");
+			System.out.println("---------------");
+			for(int i=0; i<cluster.getValue().size();i++){
+				System.out.println(cluster.getValue().get(i).parameters.entrySet());				
 			}
-			System.out.println("*************************");*/
+			System.out.println("-----------");*/
 
 			for(int i=0;i<instances.size();i++){
 
@@ -165,61 +172,59 @@ public class knn{
 					}while(outer.hasNext() || inner.hasNext());
 
 					tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
-					tempDist.fromInstance = j;
+					tempDist.fromInstance = j; //jth elem in CLuster
 			
 	                if(!(i==j)){
 	                	if(metricData.size()>=rValue){
 	                		if(metricData.lastKey()>tempDist.distanceValue){
 	                		metricData.remove(metricData.lastKey());
 	                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-	                		//System.out.println("XXXX "+i+" and "+j);
-	                		}
+		                	}
 	                	}else{
 	                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-	                		//System.out.println("XXXX "+i+" and "+j);
 	                	}
 	                }
 				}
 
+				//MetricData now stores the smallest 'RValue' distances btween ith element in cluster and corresponding positions of other element in the cluster.
+
 				int z = 0;
-				//System.out.println(metricData.entrySet());
+
+				selectedInstances.clear();
+
 				for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
-					temp2.add(instances.get(entry.getValue()));
+					selectedInstances.add(instances.get(entry.getValue()));
 				}
-				selectedInstances.put(className,temp2);
-			}
-		}
 
-		Instance newInstance;
+				//System.out.println("Number of selected Instances: "+selectedInstances.size()+);
 
-		for(Map.Entry<String,ArrayList<Instance>> selections: selectedInstances.entrySet()){
+				Instance newInstance = new Instance(className);
 
-			double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
-			for(int i=0 ; i<256; i++){
-				weights[i] = Math.random();
-				sum += weights[i];
-			}
+				for(Instance inst: selectedInstances){
 
-			className = selections.getKey();
-			newInstance = new Instance(className);
+					double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
+					for(int q=0 ; q<256; q++){
+						weights[q] = 1/(rValue+1);
+						sum += weights[q];
+					}
 
-			for(Instance selection: selections.getValue()){
-
-				Iterator selIndexes = selection.parameters.entrySet().iterator();
-				while(selIndexes.hasNext()){
-					temp = (Map.Entry)selIndexes.next();
-					curKey = temp.getKey();
-					if(newInstance.parameters.containsKey(curKey)){
-						newValue = newInstance.parameters.get(curKey) + (weights[curKey]*temp.getValue())/(sum);
-						newInstance.parameters.put(curKey,newValue);
-					}else{
-						newValue = (weights[curKey]*temp.getValue())/(sum);
-						newInstance.parameters.put(curKey,newValue);
+					Iterator selIndexes = inst.parameters.entrySet().iterator();
+					
+					while(selIndexes.hasNext()){
+						temp = (Map.Entry)selIndexes.next();
+						curKey = temp.getKey();
+						if(newInstance.parameters.containsKey(curKey)){
+							newValue = newInstance.parameters.get(curKey) + (weights[curKey]*temp.getValue())/(sum);
+							newInstance.parameters.put(curKey,newValue);
+						}else{
+							newValue = (weights[curKey]*temp.getValue())/(sum);
+							newInstance.parameters.put(curKey,newValue);
+						}
 					}
 				}
-			}
 
-			trainingData.add(newInstance);
+				trainingData.add(newInstance);
+			}
 		}
 	}
 
@@ -244,7 +249,7 @@ public class knn{
 				if(clusters.containsKey(className)){
 					temp = clusters.get(className);
 					temp.add(instance);
-					clusters.put(className,temp);							
+					clusters.put(className,temp);	
 				}else{
 					temp = new ArrayList<Instance>();
 					temp.add(instance);
@@ -460,17 +465,3 @@ public class knn{
 
 }
 
-/*	public static void normalize(List<Instance> tData){
-		for(int i=0;i<tData.size();i++){
-			int currentIndex; double max,min,normalizedValue;
-			for(Map.Entry<Integer,Double> entry: tData.get(i).parameters.entrySet()){
-				currentIndex = entry.getKey();
-				max = Instance.max.get(currentIndex);
-				min = Instance.min.get(currentIndex);
-				if(!(max==min)){
-					normalizedValue = (entry.getValue()-min)/(max-min);
-					tData.get(i).parameters.put(entry.getKey(),normalizedValue);
-				}
-			}			
-		}		
-	}*/
