@@ -262,7 +262,7 @@ public class knn{
 		try{
 			String classId;
 			double weight = 0;
-			//HashMap to store Key,Value pairs where Key - Class Name and Value is weighted distance.
+			//HashMap to store Key,Value pairs where Key - Class Name and Value is weighted distance
 			Map<String,Double> classMap = new HashMap<String,Double>(kValue);
 			//Loop to populate the 'classMap' with data from the k closest instances.
 
