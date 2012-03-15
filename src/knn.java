@@ -19,10 +19,10 @@ public class knn{
 
 		final long startTime = System.nanoTime();
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
-		readData(args[0], trainingData);
-		readData(args[1], testData);
-		normalize(trainingData);
-		normalize(testData);
+		readData(args[0], trainingData, 0);
+		readData(args[1], testData, 1);
+		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
+		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
 		final int kValue = Integer.parseInt(args[2]);
 		final int dMetric = Integer.parseInt(args[3]);
 		final String fName = args[0].substring(0,args[0].lastIndexOf(".train"))+"_prediction_file.txt";
@@ -45,7 +45,48 @@ public class knn{
 
 	/* Method to normalize the data sets */
 
-	public static void normalize(List<Instance> tData){
+	public static void standardDeviation(List<Instance> tData, Map<Integer,Double> mean, Map<Integer,Double> stdDev){
+		int dataSize = tData.size(); double temp;
+		for(Map.Entry<Integer,Double> entry: mean.entrySet()){
+			entry.setValue(entry.getValue()/dataSize);
+		}
+		int currentIndex; Instance curInstance;
+		double curValue;
+
+		for(int i=0;i<dataSize;i++){
+			curInstance = tData.get(i);
+
+			for(Map.Entry<Integer,Double> entry: curInstance.parameters.entrySet()){
+				int curKey = entry.getKey();
+				double curVal = entry.getValue();
+				if(stdDev.containsKey(curKey)){
+					temp = stdDev.get(curKey);
+				}else{
+					temp = 0;
+				}
+				stdDev.put(curKey, (temp+Math.pow((curVal-mean.get(curKey)),2)));
+			}
+		}
+	}
+
+	public static void normalizeNEW(List<Instance> tData, Map<Integer,Double> mean, Map<Integer,Double> stdDev){
+		standardDeviation(tData,mean,stdDev); double curVal; int curKey;
+		Instance curInstance; int currentIndex; double temp;
+		for(int i=0;i<tData.size();i++){
+			curInstance = tData.get(i);
+
+			for(Map.Entry<Integer,Double> entry: curInstance.parameters.entrySet()){
+				curKey = entry.getKey();
+				curVal = entry.getValue();
+				System.out.println("Current Value: "+curVal+" Mean: "+mean.get(curKey));
+				temp = (curVal-mean.get(curKey))/Math.sqrt((stdDev.get(curKey)));
+				System.out.println("STDDEV: "+stdDev.get(curKey)+" new value: "+temp);	
+				entry.setValue(temp);
+			}
+		}
+	}
+
+/*	public static void normalize(List<Instance> tData){
 		for(int i=0;i<tData.size();i++){
 			int currentIndex; double max,min,normalizedValue;
 			for(Map.Entry<Integer,Double> entry: tData.get(i).parameters.entrySet()){
@@ -58,10 +99,10 @@ public class knn{
 				}
 			}			
 		}		
-	}
+	}*/
 
 	/*Method to read data from files. */
-	public static void readData(String fileName, List<Instance> tData){
+	public static void readData(String fileName, List<Instance> tData, int type){
 		try{
 			String line; int flag=0; int colPos; Instance instance = new Instance("");
 			BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -72,7 +113,7 @@ public class knn{
 						flag++;
 					}else{
 						colPos = token.indexOf(":");
-						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)));				
+						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)),type);			
 					}
 				}
 				tData.add(instance);
