@@ -21,16 +21,18 @@ public class knn{
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
 		readData(args[0], trainingData, 0);	
 		System.out.println("TD SIZE: "+trainingData.size());
-		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
-		//normalize(trainingData,Instance.maxTRN,Instance.minTRN);
-		//bootstrap(5);
+		//normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
+		normalize(trainingData,Instance.maxTRN,Instance.minTRN);
+		if(args[3].equals("0")){
+			bootstrap(5);	
+		}else{
+			bootstrapSIM(5);
+		}
 
 		readData(args[1], testData, 1);	
-		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
-		//normalize(testData,Instance.maxTST,Instance.minTST);		
+		//normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
+		normalize(testData,Instance.maxTST,Instance.minTST);		
 
-	
-		System.out.println("There are "+clusters.size()+" clusters.");
 		System.out.println("New Size: "+trainingData.size());
 
 		final int kValue = Integer.parseInt(args[2]);
@@ -41,7 +43,7 @@ public class knn{
 			if(dMetric == 0){
                 euclideanDistance(kValue,dMetric,writer);
             }else{
-                //cosineSimilarity(kValue,dMetric,writer);
+                cosineSimilarity(kValue,dMetric,writer);
             }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
@@ -87,7 +89,7 @@ public class knn{
 				curKey = entry.getKey();
 				curVal = entry.getValue();
 				//System.out.println("Current Value: "+curVal+" Mean: "+mean.get(curKey));
-				temp = (curVal)/Math.sqrt((stdDev.get(curKey)));
+				temp = (curVal-mean.get(curKey))/Math.sqrt((stdDev.get(curKey)));
 				//System.out.println("STDDEV: "+stdDev.get(curKey)+" new value: "+temp);	
 				entry.setValue(temp);
 			}
@@ -123,13 +125,6 @@ public class knn{
 		for(Map.Entry<String,ArrayList<Instance>> cluster: clusters.entrySet()){
 			instances = cluster.getValue();
 			className = cluster.getKey();
-
-/*			System.out.println("Processing cluster of class "+className+" with "+cluster.getValue().size()+" instances.");
-			System.out.println("---------------");
-			for(int i=0; i<cluster.getValue().size();i++){
-				System.out.println(cluster.getValue().get(i).parameters.entrySet());				
-			}
-			System.out.println("-----------");*/
 
 			for(int i=0;i<instances.size();i++){
 
@@ -204,9 +199,120 @@ public class knn{
 
 					double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
 					for(int q=0 ; q<256; q++){
-						weights[q] = 1/(rValue+1);
+						weights[q] = 0.3;
 						sum += weights[q];
 					}
+					sum = 1;
+
+					Iterator selIndexes = inst.parameters.entrySet().iterator();
+					
+					while(selIndexes.hasNext()){
+						temp = (Map.Entry)selIndexes.next();
+						curKey = temp.getKey();
+						if(newInstance.parameters.containsKey(curKey)){
+							newValue = newInstance.parameters.get(curKey) + (weights[curKey]*temp.getValue())/(sum);
+							newInstance.parameters.put(curKey,newValue);
+						}else{
+							newValue = (weights[curKey]*temp.getValue())/(sum);
+							newInstance.parameters.put(curKey,newValue);
+						}
+					}
+				}
+/*				System.out.println("Adding Instance of Class: "+newInstance.instanceClass);
+				System.out.println(newInstance.parameters.entrySet());*/
+				trainingData.add(newInstance);
+			//	System.out.println("*************************");
+			}
+		}
+	}
+
+	public static void bootstrapSIM(int rValue){
+		ArrayList<Instance> additions = new ArrayList<Instance>();
+		ArrayList<Instance> instances;
+		ArrayList<Instance> selectedInstances = new ArrayList<Instance>();	String className; 
+		Map.Entry<Integer,Double> outerEntry;
+		Map.Entry<Integer,Double> innerEntry; double modOuter = 0; double modInner = 0;
+		Map.Entry<Integer,Double> temp;
+		int[] indexes = new int[rValue];
+
+		Similarities tempSim = new Similarities();
+
+		for(Map.Entry<String,ArrayList<Instance>> cluster: clusters.entrySet()){
+			instances = cluster.getValue();
+			className = cluster.getKey();
+
+			for(int i=0;i<instances.size();i++){
+
+				metricData.clear();
+
+				for(int j=0;j<instances.size();j++){
+
+					Iterator outer = instances.get(i).parameters.entrySet().iterator();
+					Iterator inner = instances.get(j).parameters.entrySet().iterator();
+					
+					for(Map.Entry<Integer,Double> entry: instances.get(i).parameters.entrySet()){
+						modOuter += Math.pow(entry.getValue(),2);
+					}
+					modOuter = Math.sqrt(modOuter);
+					for(Map.Entry<Integer,Double> entry: instances.get(j).parameters.entrySet()){
+						modInner += Math.pow(entry.getValue(),2);
+					}
+					modInner = Math.sqrt(modInner);
+
+					tempSim.similarityValue = 0;
+					tempSim.fromInstance = 0;
+					outerEntry = (Map.Entry)outer.next();
+					innerEntry = (Map.Entry)inner.next();
+
+					do{
+						if(innerEntry.getKey()==innerEntry.getKey()){
+							tempSim.similarityValue += innerEntry.getValue()*outerEntry.getValue();	
+							innerEntry = (Map.Entry)inner.next();
+							outerEntry = (Map.Entry)outer.next();
+						}else if(innerEntry.getKey()<outerEntry.getKey()){
+								innerEntry = (Map.Entry)inner.next();
+						}else{
+							outerEntry = (Map.Entry)outer.next();
+						}					
+					}while(outer.hasNext() && inner.hasNext());
+
+					tempSim.similarityValue = tempSim.similarityValue/(modOuter*modInner);
+					tempSim.fromInstance = j; //jth elem in CLuster
+			
+	                if(!(i==j)){
+	                	if(metricData.size()>=rValue){
+	                		if(metricData.firstKey()<tempSim.similarityValue){
+	                		metricData.remove(metricData.lastKey());
+	                		metricData.put(tempSim.similarityValue,tempSim.fromInstance);
+		                	}
+	                	}else{
+	                		metricData.put(tempSim.similarityValue,tempSim.fromInstance);
+	                	}
+	                }
+				}
+
+				//MetricData now stores the smallest 'RValue' distances btween ith element in cluster and corresponding positions of other element in the cluster.
+
+				int z = 0;
+
+				selectedInstances.clear();
+
+				for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
+					selectedInstances.add(instances.get(entry.getValue()));
+				}
+
+				//System.out.println("Number of selected Instances: "+selectedInstances.size()+);
+
+				Instance newInstance = new Instance(className);
+
+				for(Instance inst: selectedInstances){
+
+					double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
+					for(int q=0 ; q<256; q++){
+						weights[q] = 0.3;
+						sum += weights[q];
+					}
+					sum = 1;
 
 					Iterator selIndexes = inst.parameters.entrySet().iterator();
 					
@@ -339,43 +445,49 @@ public class knn{
 	}
 
 	//Very similar as eucledian distance, except cosine similarity is calculated.
-/*	public static void cosineSimilarity(int kValue, int dMetric, BufferedWriter writer){
-		float tp = 0; 
+	public static void cosineSimilarity(int kValue, int dMetric, BufferedWriter writer){
+		float tp = 0;         
+		Map.Entry<Integer,Double> TSTentry; 
+        Map.Entry<Integer,Double>TRNentry;
 		double modTstDataInstance = 0, modTrnDataInstance = 0; //Variables to store the mod values of the instances.
         Similarities tempSim = new Similarities();
 
 		for(int a=0;a<testData.size();a++){
+
 			metricData.clear();
-			for(int i = 0; i<testData.get(a).indexes.size();i++){
-				modTstDataInstance += Math.pow(testData.get(a).values.get(i),2);
+
+			for(Map.Entry<Integer,Double> entry: testData.get(a).parameters.entrySet()){
+				modTstDataInstance += Math.pow(entry.getValue(),2);
 			}
 			modTstDataInstance = Math.sqrt(modTstDataInstance);
 
 			for(int b=0; b<trainingData.size();b++){
+
 				tempSim.similarityValue = 0;
                 tempSim.fromInstance = 0;
 
-				final int trdInstanceDimensionSize = trainingData.get(b).indexes.size();
-				final int tstInstanceDimensionSize = testData.get(a).indexes.size();
+				Iterator TSTIterator = testData.get(a).parameters.entrySet().iterator();
+				Iterator TRNIterator = trainingData.get(b).parameters.entrySet().iterator();
+				TSTentry = (Map.Entry)TSTIterator.next();
+				TRNentry = (Map.Entry)TRNIterator.next();
 
-				for(int i = 0, j = 0; i<tstInstanceDimensionSize && j<trdInstanceDimensionSize; ){
-                    int _tstIndex = testData.get(a).indexes.get(i);
-                    int _trnIndex = trainingData.get(b).indexes.get(j);
-                    if(_tstIndex==_trnIndex){
-                    	tempSim.similarityValue += (testData.get(a).values.get(i))*(trainingData.get(b).values.get(j));
-                      	i++; j++;
-                        continue;
-					}else if(_tstIndex<_trnIndex){
-						i++; continue;
-					}else{
-						j++; continue;
+				do{
+					if(TSTentry.getKey()==TRNentry.getKey()){
+						tempSim.similarityValue += TSTentry.getValue()*TRNentry.getValue();
+						TSTentry = (Map.Entry)TSTIterator.next();
+						TRNentry = (Map.Entry)TRNIterator.next();
+					}else if(TSTentry.getKey()<TRNentry.getKey()){
+						TSTentry = (Map.Entry)TSTIterator.next();
+					}else if(TRNentry.getKey()<TSTentry.getKey()){
+						TRNentry = (Map.Entry)TRNIterator.next();
 					}
-				}
+				}while(TSTIterator.hasNext()&&TRNIterator.hasNext());
 
-				for(int i=0; i<trainingData.get(b).indexes.size();i++){
-					modTrnDataInstance += Math.pow(trainingData.get(b).values.get(i),2);
+				for(Map.Entry<Integer,Double> entry: trainingData.get(b).parameters.entrySet()){
+					modTrnDataInstance += Math.pow(entry.getValue(),2);
 				}
 				modTrnDataInstance = Math.sqrt(modTrnDataInstance);
+
 				tempSim.similarityValue = (tempSim.similarityValue)/(modTrnDataInstance*modTstDataInstance);
 				tempSim.fromInstance = b;
 
@@ -389,13 +501,13 @@ public class knn{
                 }
 			}
 
+			//System.out.println(metricData.entrySet());
+
 			tp += classification(a,kValue,dMetric,writer);
 		}
 
-		//System.out.println("**************************************");
-		//System.out.println("TP: "+tp+" FP: "+(testData.size()-tp));
 		System.out.println("Accuracy: "+(tp/testData.size())*100);
-	}*/
+	}
 
 		public static int classification(int testInstanceId, int kValue, int dMetric, BufferedWriter writer){
 		try{
