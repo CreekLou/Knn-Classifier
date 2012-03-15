@@ -24,7 +24,7 @@ class Instance{
 
 	public void addTerm(int index, double value, int type){
 		parameters.put(index,value);
-				
+
 		if(type == 0){
 
 			if(meanTRN.containsKey(index)){
@@ -48,7 +48,7 @@ class Instance{
 			}else{
 				minTRN.put(index,value);
 			}
-		}else{
+		}else if(type == 1){
 
 			if(meanTST.containsKey(index)){
 				meanTST.put(index,(meanTST.get(index)+value));

@@ -14,13 +14,29 @@ public class knn{
 	public static List<Instance> trainingData = new ArrayList<Instance>();
 	public static List<Instance> testData = new ArrayList<Instance>();
 	public static TreeMap<Double,Integer> metricData = new TreeMap<Double,Integer>();
-	
+	public static Map<String,ArrayList<Instance>> clusters = new HashMap<String,ArrayList<Instance>>();
+	public static Map<String,ArrayList<Instance>> selectedInstances = new HashMap<String,ArrayList<Instance>>();
 	public static void main(String[] args){
 
 		final long startTime = System.nanoTime();
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
 		readData(args[0], trainingData, 0);
+		System.out.println("TD SIZE: "+trainingData.size());
+/*		for(Map.Entry<String,ArrayList<Instance>> entry: clusters.entrySet()){
+			System.out.println("Class: "+entry.getKey());
+			for(Instance instance: entry.getValue()){
+			System.out.println(instance.parameters.entrySet());
+			}
+		}	*/	
+		
+/*		System.out.println("There are "+clusters.size()+" clusters.");
+		System.out.println("*********");
+*/
+		bootstrap(5);
+		System.out.println("New Size: "+trainingData.size());
+
 		readData(args[1], testData, 1);
+		
 		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);
 		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
 		final int kValue = Integer.parseInt(args[2]);
@@ -29,10 +45,10 @@ public class knn{
 		try{
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
 			if(dMetric == 0){
-                            euclideanDistance(kValue,dMetric,writer);
-                        }else{
+                euclideanDistance(kValue,dMetric,writer);
+            }else{
                             //cosineSimilarity(kValue,dMetric,writer);
-                        }
+            }
 			writer.close();
 			final long estimatedTime = System.nanoTime() - startTime;
 			System.out.println("Time Cost: "+estimatedTime/(Math.pow(10,9))+" seconds.");
@@ -42,8 +58,6 @@ public class knn{
 		}
 
 	}
-
-	/* Method to normalize the data sets */
 
 	public static void standardDeviation(List<Instance> tData, Map<Integer,Double> mean, Map<Integer,Double> stdDev){
 		int dataSize = tData.size(); double temp;
@@ -86,35 +100,155 @@ public class knn{
 		}
 	}
 
-/*	public static void normalize(List<Instance> tData){
-		for(int i=0;i<tData.size();i++){
-			int currentIndex; double max,min,normalizedValue;
-			for(Map.Entry<Integer,Double> entry: tData.get(i).parameters.entrySet()){
-				currentIndex = entry.getKey();
-				max = Instance.max.get(currentIndex);
-				min = Instance.min.get(currentIndex);
-				if(!(max==min)){
-					normalizedValue = (entry.getValue()-min)/(max-min);
-					tData.get(i).parameters.put(entry.getKey(),normalizedValue);
+	public static void bootstrap(int rValue){
+		ArrayList<Instance> additions = new ArrayList<Instance>();
+		ArrayList<Instance> instances;
+		ArrayList<Instance> temp2 = new ArrayList<Instance>();
+		String className; 
+		Map.Entry<Integer,Double> outerEntry;
+		Map.Entry<Integer,Double> innerEntry;
+		Map.Entry<Integer,Double> temp;
+		int[] indexes = new int[rValue];
+
+		Distances tempDist = new Distances();
+
+	//	System.out.println(clusters.entrySet());
+	/*	System.out.println("SDSJKDNKDJ");*/
+		for(Map.Entry<String,ArrayList<Instance>> cluster: clusters.entrySet()){
+			instances = cluster.getValue();
+			className = cluster.getKey();
+/*			System.out.println("*************************");
+			System.out.println("New Cluster of class "+className);*/
+/*			for(int i=0 ; i<instances.size(); i++){
+				System.out.println(instances.get(i).parameters.entrySet());
+			}
+			System.out.println("*************************");*/
+
+			for(int i=0;i<instances.size();i++){
+
+				metricData.clear();
+
+				for(int j=0;j<instances.size();j++){
+
+					Iterator outer = instances.get(i).parameters.entrySet().iterator();
+					Iterator inner = instances.get(j).parameters.entrySet().iterator();
+					tempDist.distanceValue = 0;
+					tempDist.fromInstance = 0;
+
+					do{
+						if(!outer.hasNext()){
+							if(inner.hasNext()){
+								do{
+									innerEntry = (Map.Entry)inner.next();
+									tempDist.distanceValue += Math.pow(innerEntry.getValue(),2);
+								}while(inner.hasNext());
+							}
+							break;
+						}	else if(!inner.hasNext()){
+									do{
+										outerEntry = (Map.Entry)outer.next();
+										tempDist.distanceValue += Math.pow(outerEntry.getValue(),2);
+									}while(outer.hasNext());
+									break;
+						}	else{
+								outerEntry = (Map.Entry)outer.next();
+								innerEntry = (Map.Entry)inner.next();
+								if(innerEntry.getKey()==innerEntry.getKey()){
+									tempDist.distanceValue += Math.pow((innerEntry.getValue()-outerEntry.getValue()),2);				
+								}else if(innerEntry.getKey()<outerEntry.getKey()){
+									tempDist.distanceValue += Math.pow(innerEntry.getValue(),2);
+								}else{
+									//This implies that the testData has a missing dimension.
+								tempDist.distanceValue += Math.pow(outerEntry.getValue(),2);
+							}
+						}
+					}while(outer.hasNext() || inner.hasNext());
+
+					tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
+					tempDist.fromInstance = j;
+			
+	                if(!(i==j)){
+	                	if(metricData.size()>=rValue){
+	                		if(metricData.lastKey()>tempDist.distanceValue){
+	                		metricData.remove(metricData.lastKey());
+	                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
+	                		//System.out.println("XXXX "+i+" and "+j);
+	                		}
+	                	}else{
+	                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
+	                		//System.out.println("XXXX "+i+" and "+j);
+	                	}
+	                }
 				}
-			}			
-		}		
-	}*/
+
+				int z = 0;
+				//System.out.println(metricData.entrySet());
+				for(Map.Entry<Double,Integer> entry: metricData.entrySet()){
+					temp2.add(instances.get(entry.getValue()));
+				}
+				selectedInstances.put(className,temp2);
+			}
+		}
+
+		Instance newInstance;
+
+		for(Map.Entry<String,ArrayList<Instance>> selections: selectedInstances.entrySet()){
+
+			double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
+			for(int i=0 ; i<256; i++){
+				weights[i] = Math.random();
+				sum += weights[i];
+			}
+
+			className = selections.getKey();
+			newInstance = new Instance(className);
+
+			for(Instance selection: selections.getValue()){
+
+				Iterator selIndexes = selection.parameters.entrySet().iterator();
+				while(selIndexes.hasNext()){
+					temp = (Map.Entry)selIndexes.next();
+					curKey = temp.getKey();
+					if(newInstance.parameters.containsKey(curKey)){
+						newValue = newInstance.parameters.get(curKey) + (weights[curKey]*temp.getValue())/(sum);
+						newInstance.parameters.put(curKey,newValue);
+					}else{
+						newValue = (weights[curKey]*temp.getValue())/(sum);
+						newInstance.parameters.put(curKey,newValue);
+					}
+				}
+			}
+
+			trainingData.add(newInstance);
+		}
+	}
 
 	/*Method to read data from files. */
 	public static void readData(String fileName, List<Instance> tData, int type){
 		try{
 			String line; int flag=0; int colPos; Instance instance = new Instance("");
+			String className = "";
 			BufferedReader br = new BufferedReader(new FileReader(fileName));
+			ArrayList<Instance> temp;
 			while((line=br.readLine())!=null){
 				for(String token: line.split("\\s+")){
 					if(flag==0){
 						instance = new Instance(token);
+						className = token;
 						flag++;
 					}else{
 						colPos = token.indexOf(":");
-						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)),type);			
+						instance.addTerm(Integer.parseInt(token.substring(0,colPos)),Double.parseDouble(token.substring(colPos+1)),type);
 					}
+				}
+				if(clusters.containsKey(className)){
+					temp = clusters.get(className);
+					temp.add(instance);
+					clusters.put(className,temp);							
+				}else{
+					temp = new ArrayList<Instance>();
+					temp.add(instance);
+					clusters.put(className,temp);
 				}
 				tData.add(instance);
 				flag = 0;
@@ -323,5 +457,20 @@ public class knn{
 		}		
 		return 0;
 	}
+
 }
 
+/*	public static void normalize(List<Instance> tData){
+		for(int i=0;i<tData.size();i++){
+			int currentIndex; double max,min,normalizedValue;
+			for(Map.Entry<Integer,Double> entry: tData.get(i).parameters.entrySet()){
+				currentIndex = entry.getKey();
+				max = Instance.max.get(currentIndex);
+				min = Instance.min.get(currentIndex);
+				if(!(max==min)){
+					normalizedValue = (entry.getValue()-min)/(max-min);
+					tData.get(i).parameters.put(entry.getKey(),normalizedValue);
+				}
+			}			
+		}		
+	}*/
