@@ -281,9 +281,7 @@ public class knn{
 			System.out.println("Writing Error!");
 		}		
 		return 0;
-	}
-        
-        
+	}         
         
 	public static void bootstrap(int RValue, int dMetric, BufferedWriter writer){
 		/* In this method, we are looping over all the test Data Instances, calculating the distance eucledian distance between each of these instances and all the training data instances. These distance values are then stored in an array of objects of type Distance (check instance.java). The distances are then sorted and passed to method 'Classification' with a reference to the test Data ID. */
@@ -295,7 +293,7 @@ public class knn{
 		for(int a = 0; a<trainingData.size();a++){
 			//Iterating over all TrainingData Instances
 			metricData.clear();
-                String TRN1class = trainingData.get(a).instanceClass;
+            String TRN1class = trainingData.get(a).instanceClass;
 			for(int b=a; b<trainingData.size();b++){
 
                 tempDist.distanceValue = 0;
@@ -305,87 +303,82 @@ public class knn{
 				Iterator TRN2Iterator = trainingData.get(b).parameters.entrySet().iterator();
 
 				/*Loop to calculate the distance between current trainingData instance & testData Instance. i & j keep track of which index we are on in the testData & trainingData instance respectively. */
-                                                        //String TRN1class = trainingData.get(a).instanceClass;
-                                                        String TRN2class = trainingData.get(b).instanceClass;
+                //String TRN1class = trainingData.get(a).instanceClass;
+                String TRN2class = trainingData.get(b).instanceClass;
 				if(TRN1class.equals(TRN2class)){
-                                do{
-							
-							TRN1entry = (Map.Entry)TRN1Iterator.next();
-							TRN2entry = (Map.Entry)TRN2Iterator.next();
-							if(TRN1entry.getKey()==TRN1entry.getKey()){
-								tempDist.distanceValue += Math.pow((TRN1entry.getValue()-TRN2entry.getValue()),2);		
-					/* The next 'if' statement is reached only if the current indexes of the instances are different and if the TRN1 index is lesser than the TRN2 index, implying that TRN1 has a missing dimension */				
-							}else if(TRN1entry.getKey()<TRN2entry.getKey()){
-								tempDist.distanceValue += Math.pow(TRN1entry.getValue(),2);
-							}else{
-								//This implies that the TRN2 has a missing dimension.
-								tempDist.distanceValue += Math.pow(TRN2entry.getValue(),2);
-							}
-
-				
-				}while(TRN1Iterator.hasNext() || TRN2Iterator.hasNext());
-                                }			
-                                else continue;
-		tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
-                tempDist.fromInstance = b;
-//why does it only compare with last key? it shd compare withh all present values,right??ok no, its treemap and is sorted acc to distance from a
-                if(metricData.size()>=RValue){
-                	if(metricData.lastKey()>tempDist.distanceValue){
-                		metricData.remove(metricData.lastKey());
-                		metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-                	}
-                }else{
-                	metricData.put(tempDist.distanceValue,tempDist.fromInstance);
-                }
-                
-			}
-			
-                        double[] weights=new double[RValue];
-                        double sumOfWeights = 0;
-                        for(int i=0;i<RValue;i++){
-                           weights[i]=Math.random(); 
-                           sumOfWeights+=weights[i];
-                        }
-                                                
-                        for(int i=0;i<RValue;i++){
-                           weights[i]=weights[i]/sumOfWeights;
-                           
-                        }
-                        
-                        
-                        Instance finalIns=new Instance(TRN1class);
-                                                                            
-                        Map<String,Double> tempMap = new HashMap<String,Double>(RValue);
-			//Loop to populate the 'tempMap' with data from the R closest instances multiplied by weights
-                        int i =0;
-                        //weightedSumOfValues=??;//declare here first,then calculate weighted sum in the for loop ahead
-                        Iterator TRN1_Iterator = trainingData.get(a).parameters.entrySet().iterator();
-			Iterator TRN2_Iterator = trainingData.get(b).parameters.entrySet().iterator();
-			for(Map.Entry<Double,Integer> entry: metricData.entrySet()){				                            
-                            double tempsum=0.0;
-                            do{							
-				TRN1entry = (Map.Entry)TRN1_Iterator.next();
-				TRN2entry = (Map.Entry)TRN2_Iterator.next();
-					if(TRN1entry.getKey()==TRN1entry.getKey()){
-						tempsum += weights[i]*(TRN1entry.getValue()+TRN2entry.getValue());
+                    do{
+						TRN1entry = (Map.Entry)TRN1Iterator.next();
+						TRN2entry = (Map.Entry)TRN2Iterator.next();
+						if(TRN1entry.getKey()==TRN1entry.getKey()){
+							tempDist.distanceValue += Math.pow((TRN1entry.getValue()-TRN2entry.getValue()),2);		
 					/* The next 'if' statement is reached only if the current indexes of the instances are different and if the TRN1 index is lesser than the TRN2 index, implying that TRN1 has a missing dimension */				
 						}else if(TRN1entry.getKey()<TRN2entry.getKey()){
-							tempsum += weights[i]*TRN1entry.getValue();
+								tempDist.distanceValue += Math.pow(TRN1entry.getValue(),2);
 						}else{
-							//This implies that the TRN2 has a missing dimension.
-							tempsum += weights[i]*TRN2entry.getValue();
-						     }
-
-				
-				}while(TRN1_Iterator.hasNext() || TRN2_Iterator.hasNext());
-                            i++;
-//				
+								//This implies that the TRN2 has a missing dimension.
+								tempDist.distanceValue += Math.pow(TRN2entry.getValue(),2);
+						}				
+					}while(TRN1Iterator.hasNext() || TRN2Iterator.hasNext());
+                }else{
+                	continue;
+                }
+                	
+				tempDist.distanceValue = Math.sqrt(tempDist.distanceValue);
+	            tempDist.fromInstance = b;
+				//why does it only compare with last key? it shd compare withh all present values,right??ok no, its treemap and is sorted acc to distance from a
+	            if(metricData.size()>=RValue){
+	               	if(metricData.lastKey()>tempDist.distanceValue){
+	                	metricData.remove(metricData.lastKey());
+	                	metricData.put(tempDist.distanceValue,tempDist.fromInstance);
+	                }
+	            }else{
+	                metricData.put(tempDist.distanceValue,tempDist.fromInstance);
+	            }                
 			}
+		}
+	}
+			
+/*            double[] weights=new double[RValue];
+            double sumOfWeights = 0;
+            for(int i=0;i<RValue;i++){
+                weights[i]=Math.random(); 
+                sumOfWeights+=weights[i];
+            }
+                                                
+            for(int i=0;i<RValue;i++){
+                weights[i]=weights[i]/sumOfWeights;                          
+            }        
+            
+            Instance finalIns=new Instance(TRN1class);
+                                                                            
+            Map<String,Double> tempMap = new HashMap<String,Double>(RValue);
+			//Loop to populate the 'tempMap' with data from the R closest instances multiplied by weights
+            int i =0;
+                        //weightedSumOfValues=??;//declare here first,then calculate weighted sum in the for loop ahead
+            Iterator TRN1_Iterator = trainingData.get(a).parameters.entrySet().iterator();
+			Iterator TRN2_Iterator = trainingData.get(b).parameters.entrySet().iterator();
+			for(Map.Entry<Double,Integer> entry: metricData.entrySet()){				                            
+                double tempsum=0.0;
+                do{							
+					TRN1entry = (Map.Entry)TRN1_Iterator.next();
+					TRN2entry = (Map.Entry)TRN2_Iterator.next();
+					if(TRN1entry.getKey()==TRN1entry.getKey()){
+						tempsum += weights[i]*(TRN1entry.getValue()+TRN2entry.getValue());
+					/* The next 'if' statement is reached only if the current indexes of the instances are different and if the TRN1 index is lesser than the TRN2 index, implying that TRN1 has a missing dimension */		/*		
+					}else if(TRN1entry.getKey()<TRN2entry.getKey()){
+							tempsum += weights[i]*TRN1entry.getValue();
+					}else{
+						//This implies that the TRN2 has a missing dimension.
+						tempsum += weights[i]*TRN2entry.getValue();
+					}				
+				}while(TRN1_Iterator.hasNext() || TRN2_Iterator.hasNext());
+                i++;//				
+			}*/
                         //put the weighted sum inside the training data now
                         //trainingData.put(trainingData.get(entry.getValue()).instanceClass,weightedSumOfValues);
-                }
+        
 		
-	}
+	
 
 
 }
