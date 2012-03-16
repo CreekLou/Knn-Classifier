@@ -18,25 +18,27 @@ public class knn{
 	public static void main(String[] args){
 
 		final long startTime = System.nanoTime();
+		final int kValue = Integer.parseInt(args[2]);
+		final int dMetric = Integer.parseInt(args[3]);
+		int rValue = kValue;
 		/*trainingData is an ArrayList of type Instance (Check instance.java). Each entry of trainingData corresponds to one instance of the training file. See the comments in instance.java for more info about ArrayList constructors. We can tweak the initial capcity of 'trainingData' & 'testData' to optimum value depending on our results. */
 		readData(args[0], trainingData, 0);	
 		System.out.println("TD SIZE: "+trainingData.size());
-		//normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
-		normalize(trainingData,Instance.maxTRN,Instance.minTRN);
+		normalizeNEW(trainingData,Instance.meanTRN,Instance.stdDevTRN);	
+		//normalize(trainingData,Instance.maxTRN,Instance.minTRN);
 		if(args[3].equals("0")){
-			bootstrap(5);	
+			bootstrap(rValue);	
 		}else{
-			bootstrapSIM(5);
+			bootstrapSIM(rValue);
 		}
 
 		readData(args[1], testData, 1);	
-		//normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
-		normalize(testData,Instance.maxTST,Instance.minTST);		
+		normalizeNEW(testData,Instance.meanTST,Instance.stdDevTST);
+		//normalize(testData,Instance.maxTST,Instance.minTST);		
 
 		System.out.println("New Size: "+trainingData.size());
 
-		final int kValue = Integer.parseInt(args[2]);
-		final int dMetric = Integer.parseInt(args[3]);
+
 		final String fName = args[0].substring(0,args[0].lastIndexOf(".train"))+"_prediction_file.txt";
 		try{
 			final BufferedWriter writer = new BufferedWriter(new FileWriter(fName));
@@ -197,8 +199,8 @@ public class knn{
 
 				for(Instance inst: selectedInstances){
 
-					double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
-					for(int q=0 ; q<256; q++){
+					double[] weights = new double[257]; double sum = 0; double newValue; int curKey;
+					for(int q=0 ; q<257; q++){
 						weights[q] = 0.3;
 						sum += weights[q];
 					}
@@ -261,15 +263,18 @@ public class knn{
 
 					tempSim.similarityValue = 0;
 					tempSim.fromInstance = 0;
-					outerEntry = (Map.Entry)outer.next();
+					outerEntry = (Map.Entry)outer.next(); 
 					innerEntry = (Map.Entry)inner.next();
+					int innerKey,outerKey;
 
 					do{
-						if(innerEntry.getKey()==innerEntry.getKey()){
+						innerKey = innerEntry.getKey();
+						outerKey = outerEntry.getKey();
+						if(innerKey==outerKey){
 							tempSim.similarityValue += innerEntry.getValue()*outerEntry.getValue();	
 							innerEntry = (Map.Entry)inner.next();
 							outerEntry = (Map.Entry)outer.next();
-						}else if(innerEntry.getKey()<outerEntry.getKey()){
+						}else if(innerKey<outerKey){
 								innerEntry = (Map.Entry)inner.next();
 						}else{
 							outerEntry = (Map.Entry)outer.next();
@@ -307,8 +312,8 @@ public class knn{
 
 				for(Instance inst: selectedInstances){
 
-					double[] weights = new double[256]; double sum = 0; double newValue; int curKey;
-					for(int q=0 ; q<256; q++){
+					double[] weights = new double[257]; double sum = 0; double newValue; int curKey;
+					for(int q=0 ; q<257; q++){
 						weights[q] = 0.3;
 						sum += weights[q];
 					}
@@ -471,17 +476,24 @@ public class knn{
 				TSTentry = (Map.Entry)TSTIterator.next();
 				TRNentry = (Map.Entry)TRNIterator.next();
 
+				int curTSTKEY, curTRNKey;
+
 				do{
-					if(TSTentry.getKey()==TRNentry.getKey()){
+						curTSTKEY = TSTentry.getKey();
+						curTRNKey = TRNentry.getKey();
+						if(curTRNKey==curTSTKEY){
 						tempSim.similarityValue += TSTentry.getValue()*TRNentry.getValue();
 						TSTentry = (Map.Entry)TSTIterator.next();
 						TRNentry = (Map.Entry)TRNIterator.next();
-					}else if(TSTentry.getKey()<TRNentry.getKey()){
+					}else if(curTSTKEY<curTRNKey){
 						TSTentry = (Map.Entry)TSTIterator.next();
-					}else if(TRNentry.getKey()<TSTentry.getKey()){
+					}else if(curTRNKey<curTSTKEY){
 						TRNentry = (Map.Entry)TRNIterator.next();
 					}
+					
 				}while(TSTIterator.hasNext()&&TRNIterator.hasNext());
+
+				//System.out.println("Came out");
 
 				for(Map.Entry<Integer,Double> entry: trainingData.get(b).parameters.entrySet()){
 					modTrnDataInstance += Math.pow(entry.getValue(),2);
