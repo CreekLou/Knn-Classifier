@@ -1,18 +1,10 @@
 1. Introduction and Overview
 
-The k-nearest neighbor (k-NN) classification problem as defined in [1] is to find the k-nearest points in a dataset to a
-given query point. A number of different metrics can be used to define the distance between 2 points including
-Euclidean distance and Cosine similarity. The k-NN problem has several important applications in a number of different
-fields such as pattern recognition and database querying. In this project we implement and evaluate the performance of
-some k-NN algorithms.
-The basic k-NN algorithm is implemented which determines the class for a given test sample by computing
-its distance from all the training samples and then assigning the class based on the closest k-samples. This algorithm as
-expected can be fairly expensive especially when we have a large training set and there has been considerable research
-aimed at finding more efficient solutions. An approach called bootstrapping [2] is also employed that increases the accuracy of the k-
-NN classification solution.
+The k-nearest neighbor (k-NN) classification problem as defined in [1] is to find the k-nearest points in a dataset to a given query point. A number of different metrics can be used to define the distance between 2 points including Euclidean distance and Cosine similarity. The k-NN problem has several important applications in a number of different fields such as pattern recognition and database querying. In this project we implement and evaluate the performance of some k-NN algorithms. The basic k-NN algorithm is implemented which determines the class for a given test sample by computing its distance from all the training samples and then assigning the class based on the closest k-samples. This algorithm as expected can be fairly expensive especially when we have a large training set and there has been considerable research aimed at finding more efficient solutions. An approach called bootstrapping [2] is also employed that increases the accuracy of the k-NN classification solution.
 
 PART I: Implementation of Basic K-NN method
 The basic k-NN algorithm implemented in this project can be broken down into 2 major steps:
+
 (1) Read all the training samples, storing them in array lists and normalizing the data.
 (2) For each test point iterate over all the training samples to select the k-closest samples.
 
@@ -20,40 +12,25 @@ Some important aspects about the algorithm and the implementation:
 
 Normalization:
 
-Different dimensions often have vastly different range of values and this implied that during metric
-calculations, certain dimensions can dominate because of larger numerical values. In order to tackle this issue, I
-normalized the values for each of the dimensions. Initially we had normalized values pertaining to an index by the
+Different dimensions often have vastly different range of values and this implied that during metric calculations, certain dimensions can dominate because of larger numerical values. In order to tackle this issue, I normalized the values for each of the dimensions. Initially we had normalized values pertaining to an index by the
 following formula:
 
 V’ = (v – max)/(max – min)
 This normalized all values to the range [0,1].
 
-However, this assumes that all dimensions contribute equally to the classification task. Upon closer consideration, I
-opined that dimensions whose values have a relatively large standard deviation will distort the accuracy of the
-classification process as they are likely to be noisier. Hence, I decided to add a new normalization technique (outlined
-in method normalizationNEW() ) – one in which, each value of a dimension is divided by the standard deviation of all
-the values in the dimension. This is equivalent to doing a linear transformation of all the values by a uni-dimensional
-vector W along the same dimension:
+However, this assumes that all dimensions contribute equally to the classification task. Upon closer consideration, I opined that dimensions whose values have a relatively large standard deviation will distort the accuracy of the classification process as they are likely to be noisier. Hence, I decided to add a new normalization technique (outlined
+in method normalizationNEW() ) – one in which, each value of a dimension is divided by the standard deviation of all the values in the dimension. This is equivalent to doing a linear transformation of all the values by a uni-dimensional vector W along the same dimension:
 
 V’ = W x v
 where W = 1/StandardDeviation
 
-Hence, values of dimensions with a large standard deviation will be weighted down resulting in them contributing less to
-the classification process.
+Hence, values of dimensions with a large standard deviation will be weighted down resulting in them contributing less to the classification process.
 
 Key Data Structures used:
-1. In order to store training & test data I used the Array List class defined in Java which is an implementation of
-the Vector data type. I used this because we need not declare the size of the array list in advance. In addition,
-there is no limit to the number of objects we store is the array list. We tweaked the initial capacity of the array
-list to ensure that we have an efficient implementation. It is essential to tweak the initial capacity because for
-small values for the initial capacity cause the array list to be copied over multiple times when the capacity is
-exceeded.
 
-2. I used a Linked Hashmap for storing the values of the dimensions. I use this because get() and put()
-functions have an O(1) time complexity. We are using Linked Hashmap and not a normal hashmap because we
-are not storing missing indices. The algorithms for calculating the Euclidian distance & cosine similarity traverse
-through the parameters of one test instance and one training instance simultaneously instead of making
-multiple get() calls to check if a particular dimension exists in one of the instances. This makes it necessary to
+1. In order to store training & test data I used the Array List class defined in Java which is an implementation of the Vector data type. I used this because we need not declare the size of the array list in advance. In addition, there is no limit to the number of objects we store is the array list. We tweaked the initial capacity of the array list to ensure that we have an efficient implementation. It is essential to tweak the initial capacity because for small values for the initial capacity cause the array list to be copied over multiple times when the capacity is exceeded.
+
+2. I used a Linked Hashmap for storing the values of the dimensions. I use this because get() and put() functions have an O(1) time complexity. We are using Linked Hashmap and not a normal hashmap because we are not storing missing indices. The algorithms for calculating the Euclidian distance & cosine similarity traverse through the parameters of one test instance and one training instance simultaneously instead of making multiple get() calls to check if a particular dimension exists in one of the instances. This makes it necessary to
 use a Linked Hashmap and additionally helps with the efficiency.
 
 Pseudocode
@@ -63,8 +40,7 @@ eucledianDistance(kValue, distanceMetric)
 for a = 0 to testData.size
 Declare metricData to store least k-distances
 for b = 0 to trainingData.size
-Set tempDistance = 0 to store distance between current test instance and training instance
-Declare an iterator TestIterator to iterate through test instance parameters.
+Set tempDistance = 0 to store distance between current test instance and training instance Declare an iterator TestIterator to iterate through test instance parameters.
 Declare an iterator TrainingIterator to iterate through training instance parameters.
 do
 if (not TestIterator.next) AND TrainingIterator.next is True
@@ -93,35 +69,18 @@ set a = a+1
 
 Pseudocode
 cosineSimilarity(kValue,dMetric)
-The cosine similarity has the same pseudocode except for the difference in mathematical computation of cosine
-similarity.
+The cosine similarity has the same pseudocode except for the difference in mathematical computation of cosine similarity.
 
 
 3. Conclusions
 
-I conclude that the basic k-NN algorithm can be improved in terms of accuracy by using techniques such as
-bootstrapping but such improvements in accuracy are often accompanied by a penalty in efficiency. I was able to
-achieve significant gains in accuracy for certain data sets but saw little or no improvement in others indicating the data
-dependent nature of techniques such as bootstrapping. Bootstrapping may improve accuracy, but it still doesn’t account for unimportant dimensions distorting the accuracy.
-We suggest a novel idea that can be investigated further:
+I conclude that the basic k-NN algorithm can be improved in terms of accuracy by using techniques such as bootstrapping but such improvements in accuracy are often accompanied by a penalty in efficiency. I was able to achieve significant gains in accuracy for certain data sets but saw little or no improvement in others indicating the data dependent nature of techniques such as bootstrapping. Bootstrapping may improve accuracy, but it still doesn’t account for unimportant dimensions distorting the accuracy. I suggest a novel idea that can be investigated further:
 
-(1) Implement a Method to Identify and Remove outliers in the training Data – We propose that the model
-constructed from the training data can be used to classify itself. Theoretically, it should yield 100% accuracy as
-the model was constructed from the same data. However, in practice it does not. The instances which it
-classified incorrectly can indicate two things:
- The instance is an outlier and hence should not be used to build the classification model. Therefore, it is
-suggested that we remove all such instances and rebuild the classification model based on the new training
-data with outliers removed. We can continue to do this until the training data yield at least an accuracy of 90%
-when tested on itself or when more than half of the training instances have been removed.
- The second possibility is that the instance was incorrectly classified due to the ineffectiveness of the training
+(1) Implement a Method to Identify and Remove outliers in the training Data – We propose that the model constructed from the training data can be used to classify itself. Theoretically, it should yield 100% accuracy as the model was constructed from the same data. However, in practice it does not. The instances which it classified incorrectly can indicate two things:
+ The instance is an outlier and hence should not be used to build the classification model. Therefore, it is suggested that we remove all such instances and rebuild the classification model based on the new training data with outliers removed. We can continue to do this until the training data yield at least an accuracy of 90% when tested on itself or when more than half of the training instances have been removed.  The second possibility is that the instance was incorrectly classified due to the ineffectiveness of the training
 model. I look to address this further with the suggestions below.
 
-Feature subset selection is an important area to look at for improving the accuracy of the k-NN classification algorithm.
-We can define objective functions that can help us select the most important features and combine these with a
-sequential search approach to yield the most relevant and discriminatory subset of features. There are also several
-algorithms using the concept of locality sensitive hashing (LSH) for feature reduction. I think that in the future we can
-investigate the effectiveness of all these different techniques and investigate or propose mechanisms to decide which
-set of approaches if any work best for a given set of data.
+Feature subset selection is an important area to look at for improving the accuracy of the k-NN classification algorithm. We can define objective functions that can help us select the most important features and combine these with a sequential search approach to yield the most relevant and discriminatory subset of features. There are also several algorithms using the concept of locality sensitive hashing (LSH) for feature reduction. I think that in the future we can investigate the effectiveness of all these different techniques and investigate or propose mechanisms to decide which set of approaches if any work best for a given set of data.
 
 4. Appendix
 Instructions for running the program
